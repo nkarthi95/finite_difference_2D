@@ -75,6 +75,67 @@ def animate_colormap(data, axs_labels=None, times=None, c_label=None, interval=5
     plt.close()
     return ani
 
+def animate_plot(x, y, interval=50):
+    """
+    Create an animation of a 2D line plot over time.
+
+    This function takes two lists of lists or numpy arrays representing the x and y 
+    coordinates of data over multiple timesteps and generates an animated plot. The 
+    animation can be rendered in a Jupyter notebook using the :class:`IPython.display.HTML` object.
+
+    :param x: 
+        The x-coordinates of the data, with shape (t, L), where t is the number 
+        of timesteps and L is the length of data at each timestep.
+    :type x: list of lists or numpy.ndarray
+    :param y: 
+        The y-coordinates of the data, with shape (t, L), where t is the number 
+        of timesteps and L is the length of data at each timestep.
+    :type y: list of lists or numpy.ndarray
+    :param interval: 
+        The delay in milliseconds between frames in the animation. Default is 50.
+    :type interval: int, optional
+
+    :return: 
+        An animation object that can be rendered in a Jupyter notebook using 
+        :class:`IPython.display.HTML`.
+    :rtype: matplotlib.animation.FuncAnimation
+
+    :examples:
+        >>> import numpy as np
+        >>> from IPython.display import HTML
+        >>> x = [np.linspace(0, 2 * np.pi, 100)] * 50
+        >>> y = [np.sin(xi + i * 0.1) for i, xi in enumerate(x)]
+        >>> ani = animate_plot(x, y, interval=100)
+        >>> HTML(ani.to_jshtml())
+    """
+
+    fig, ax = plt.subplots()
+    ln, = plt.plot(x[0], y[0])
+
+    def get_min_max(arr):
+        arr_min = 0
+        arr_max = 0
+        for i in range(len(arr)):
+            if min(arr[i]) < arr_min:
+                arr_min = min(arr[i])
+            if max(arr[i]) > arr_max:
+                arr_max = max(arr[i])
+        return [arr_min, arr_max]
+
+    def init():
+        plt.ylim(get_min_max(y))
+        plt.xlim(get_min_max(x))
+        ln.set_data(x[0], y[0])
+        return ln,
+
+    def update(i):
+        ln.set_data(x[i], y[i])
+        return ln,
+
+    ani = animation.FuncAnimation(fig, update, frames=len(x), init_func=init, interval=interval, blit=True)
+    plt.close()
+    return ani
+
 def read_data(file_path):
     data = []
     with open(file_path, "r") as f:
