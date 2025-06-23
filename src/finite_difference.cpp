@@ -1,9 +1,9 @@
 #include "finite_difference.H"
 
-void timestep(std::vector<std::vector<double>>& grid_old,
+void timestep(const std::vector<std::vector<double>>& grid_old,
               std::vector<std::vector<double>>& grid_new, 
-              double dx, double dy, double dt, 
-              double alpha, int halo){
+              const double dx, const double dy, const double dt, 
+              const double alpha, const int halo){
     const int nx = grid_old.size(); // includes halo
     const int ny = grid_old[0].size(); // includes halo
     // std::vector<std::vector<double>> out(nx, std::vector<double>(ny, 0.0));
@@ -32,7 +32,7 @@ void timestep(std::vector<std::vector<double>>& grid_old,
     }
 }
 
-void boundary_condition_periodic(std::vector<std::vector<double>>& grid, int halo){
+void boundary_condition_periodic(std::vector<std::vector<double>>& grid, const int halo){
     const int nx = grid.size(); // includes halo at index 0 and nx - 1
     const int ny = grid[0].size(); // includes halo at index 0 and ny - 1
     

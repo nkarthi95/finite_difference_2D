@@ -6,12 +6,12 @@
 #include <cmath>
 #include <iostream>
 
-void timestep(std::vector<std::vector<double>>& grid_old,
+void timestep(const std::vector<std::vector<double>>& grid_old,
               std::vector<std::vector<double>>& grid_new, 
-              double dx, double dy, double dt, 
-              double alpha, int halo = 1);
+              const double dx, const double dy, const double dt, 
+              const double alpha, const int halo = 1);
 
 void boundary_condition_periodic(std::vector<std::vector<double>>& grid, 
-                                 int halo = 1);
+                                 const int halo = 1);
 
 #endif
