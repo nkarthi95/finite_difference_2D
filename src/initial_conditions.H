@@ -63,4 +63,25 @@ std::vector<std::vector<double>> init_horizontal_hot_cylinder(std::vector<std::v
     return grid;
 }
 
+
+std::vector<std::vector<double>> init_hot_square(std::vector<std::vector<double>> grid, 
+                                                 double hot = 100., double cold = 50., 
+                                                 int Lx = 10, int Ly = 10){
+    const int nx = grid.size(); // includes halo
+    const int ny = grid[0].size(); // includes halo
+
+    for (int i = 0; i < nx; i++){
+        for (int j = 0; j < ny; j++){
+            bool checkx = abs(i - nx/2) < Lx/2;
+            bool checky = abs(j - ny/2) < Ly/2;
+            
+            if (checkx && checky){grid[i][j] = hot;}
+            else{grid[i][j] = cold;}
+        
+        }
+    }
+    return grid;
+}
+
+
 #endif
