@@ -60,17 +60,17 @@ int main(){
 
     // grid_old = init_hot_center(grid_old, T_hot, T_cold, 32);
     // grid_old = init_vertical_hot_cylinder(grid_old, T_hot, T_cold, 32, nx/2);
-    grid_old = init_hot_square(grid_old, T_hot, T_cold, nx/4, ny/4);
+    init_hot_square(grid_old, T_hot, T_cold, nx/4, ny/4);
 
     for(int t = 0; t <= timesteps; t++){
-        grid_old = boundary_condition_periodic(grid_old, halo);
+        boundary_condition_periodic(grid_old, halo);
 
         if (t%dump_freq == 0){
             const std::string filename = "T_" + zero_pad(t, 6) + ".txt";
             write_to_file(filename, grid_old, halo);
         }
 
-        grid_new = timestep(grid_old, dx, dy, dt, alpha, halo);
+        timestep(grid_old, grid_new, dx, dy, dt, alpha, halo);
         std::swap(grid_new, grid_old);
     }
 

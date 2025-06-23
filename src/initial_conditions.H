@@ -3,9 +3,9 @@
 
 #include "finite_difference.H"
 
-std::vector<std::vector<double>> init_hot_center(std::vector<std::vector<double>> grid, 
-                                                 double hot = 100., double cold = 50., 
-                                                 double radius = 5){
+void init_hot_center(std::vector<std::vector<double>>& grid, 
+                     double hot = 100., double cold = 50., 
+                     double radius = 5){
     const int nx = grid.size(); // includes halo
     const int ny = grid[0].size(); // includes halo
 
@@ -20,12 +20,11 @@ std::vector<std::vector<double>> init_hot_center(std::vector<std::vector<double>
             }
         }
     }
-    return grid;
 }
 
-std::vector<std::vector<double>> init_vertical_hot_cylinder(std::vector<std::vector<double>> grid, 
-                                                 double hot = 100., double cold = 50., 
-                                                 double radius = 10, int height = 0){
+void init_vertical_hot_cylinder(std::vector<std::vector<double>>& grid, 
+                                double hot = 100., double cold = 50., 
+                                double radius = 10, int height = 0){
     const int nx = grid.size(); // includes halo
     const int ny = grid[0].size(); // includes halo
 
@@ -40,12 +39,11 @@ std::vector<std::vector<double>> init_vertical_hot_cylinder(std::vector<std::vec
             }
         }
     }
-    return grid;
 }
 
-std::vector<std::vector<double>> init_horizontal_hot_cylinder(std::vector<std::vector<double>> grid, 
-                                                 double hot = 100., double cold = 50., 
-                                                 double radius = 10, int height = 0){
+void init_horizontal_hot_cylinder(std::vector<std::vector<double>>& grid, 
+                                  double hot = 100., double cold = 50., 
+                                  double radius = 10, int height = 0){
     const int nx = grid.size(); // includes halo
     const int ny = grid[0].size(); // includes halo
 
@@ -60,13 +58,12 @@ std::vector<std::vector<double>> init_horizontal_hot_cylinder(std::vector<std::v
             }
         }
     }
-    return grid;
 }
 
 
-std::vector<std::vector<double>> init_hot_square(std::vector<std::vector<double>> grid, 
-                                                 double hot = 100., double cold = 50., 
-                                                 int Lx = 10, int Ly = 10){
+void init_hot_square(std::vector<std::vector<double>>& grid, 
+                     double hot = 100., double cold = 50., 
+                     int Lx = 10, int Ly = 10){
     const int nx = grid.size(); // includes halo
     const int ny = grid[0].size(); // includes halo
 
@@ -80,7 +77,6 @@ std::vector<std::vector<double>> init_hot_square(std::vector<std::vector<double>
         
         }
     }
-    return grid;
 }
 
 
