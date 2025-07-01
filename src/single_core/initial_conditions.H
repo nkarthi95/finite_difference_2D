@@ -2,79 +2,98 @@
 #define INITIAL_CONDITIONS_H
 
 #include "finite_difference.H"
+#include "misc_functions.H"
 
-void init_hot_center(std::vector<std::vector<double>>& grid, 
+void init_hot_center(std::vector<double>& grid,
+                     const std::array<int, 2> dims,
                      double hot = 100., double cold = 50., 
                      double radius = 5){
-    const int nx = grid.size(); // includes halo
-    const int ny = grid[0].size(); // includes halo
+    int nx = dims[0]; // includes halo
+    int ny = dims[1]; // includes halo
+    int index_1d;
+    bool check;
 
     for (int i = 0; i < nx; i++){
         for (int j = 0; j < ny; j++){
-            double test = pow(i - nx/2., 2) + pow(j - ny/2., 2);
-            if (test < pow(radius, 2)){
-                grid[i][j] = hot;
+            index_1d = idx_2d_to_1d(i, j, ny);
+            check = pow(i - nx/2., 2) + pow(j - ny/2., 2) < pow(radius, 2);
+            
+            if (check){
+                grid[index_1d] = hot;
             }
             else{
-                grid[i][j] = cold;
+                grid[index_1d] = cold;
             }
         }
     }
 }
 
-void init_vertical_hot_cylinder(std::vector<std::vector<double>>& grid, 
+void init_vertical_hot_cylinder(std::vector<double>& grid, 
+                                const std::array<int, 2> dims,
                                 double hot = 100., double cold = 50., 
                                 double radius = 10, int height = 0){
-    const int nx = grid.size(); // includes halo
-    const int ny = grid[0].size(); // includes halo
+    int nx = dims[0]; // includes halo
+    int ny = dims[1]; // includes halo
+    int index_1d;
+    bool check;
 
     for (int i = 0; i < nx; i++){
         for (int j = 0; j < ny; j++){
-            // double height_diff = j - height;
-            if (abs(j - height) <= radius){
-                grid[i][j] = hot;
+            index_1d = idx_2d_to_1d(i, j, ny);
+            check = abs(j - height) <= radius;
+
+            if (check){
+                grid[index_1d] = hot;
             }
             else{
-                grid[i][j] = cold;
+                grid[index_1d] = cold;
             }
         }
     }
 }
 
-void init_horizontal_hot_cylinder(std::vector<std::vector<double>>& grid, 
+void init_horizontal_hot_cylinder(std::vector<double>& grid, 
+                                  const std::array<int, 2> dims,
                                   double hot = 100., double cold = 50., 
                                   double radius = 10, int height = 0){
-    const int nx = grid.size(); // includes halo
-    const int ny = grid[0].size(); // includes halo
+    int nx = dims[0]; // includes halo
+    int ny = dims[1]; // includes halo
+    int index_1d;
+    bool check;
 
     for (int i = 0; i < nx; i++){
         for (int j = 0; j < ny; j++){
-            // double height_diff = j - height;
-            if (abs(i - height) <= radius){
-                grid[i][j] = hot;
+            index_1d = idx_2d_to_1d(i, j, ny);
+            check = abs(i - height) <= radius;
+
+            if (check){
+                grid[index_1d] = hot;
             }
             else{
-                grid[i][j] = cold;
+                grid[index_1d] = cold;
             }
         }
     }
 }
 
-
-void init_hot_square(std::vector<std::vector<double>>& grid, 
+void init_hot_square(std::vector<double>& grid, 
+                     const std::array<int, 2> dims,
                      double hot = 100., double cold = 50., 
                      int Lx = 10, int Ly = 10){
-    const int nx = grid.size(); // includes halo
-    const int ny = grid[0].size(); // includes halo
 
+    int nx = dims[0]; // includes halo
+    int ny = dims[1]; // includes halo
+    int index_1d;
+    bool checkx, checky;
+    
     for (int i = 0; i < nx; i++){
         for (int j = 0; j < ny; j++){
-            bool checkx = abs(i - nx/2) < Lx/2;
-            bool checky = abs(j - ny/2) < Ly/2;
-            
-            if (checkx && checky){grid[i][j] = hot;}
-            else{grid[i][j] = cold;}
-        
+            checkx = abs(i - nx/2) < Lx/2;
+            checky = abs(j - ny/2) < Ly/2;
+            index_1d = idx_2d_to_1d(i, j, ny);
+
+            if (checkx && checky){grid[index_1d] = hot;}
+            else{grid[index_1d] = cold;}
         }
     }
 }
