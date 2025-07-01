@@ -48,18 +48,18 @@ void boundary_condition_periodic(std::vector<double>& grid,
     int ny = dims[1]; // includes halo at index 0 and ny - 1
     
     int ghost_index, interior_index;
-    // Periodic in Y (top/bottom)
-    for (int j = halo; j < ny - halo; ++j) {
-        for (int h = 0; h < halo; ++h) {
-            ghost_index = idx_2d_to_1d(h, j, ny);
-            interior_index  = idx_2d_to_1d(nx-2*halo+h, j, ny);
-            grid[ghost_index] = grid[interior_index];             // top ghost = bottom interior
+    // // Periodic in Y (top/bottom)
+    // for (int j = halo; j < ny - halo; ++j) {
+    //     for (int h = 0; h < halo; ++h) {
+    //         ghost_index = idx_2d_to_1d(h, j, ny);
+    //         interior_index  = idx_2d_to_1d(nx-2*halo+h, j, ny);
+    //         grid[ghost_index] = grid[interior_index];             // top ghost = bottom interior
             
-            ghost_index = idx_2d_to_1d(nx-halo+h, j, ny);
-            interior_index  = idx_2d_to_1d(halo+h, j, ny);
-            grid[ghost_index] = grid[interior_index];          // bottom ghost = top interior
-        }
-    }
+    //         ghost_index = idx_2d_to_1d(nx-halo+h, j, ny);
+    //         interior_index  = idx_2d_to_1d(halo+h, j, ny);
+    //         grid[ghost_index] = grid[interior_index];          // bottom ghost = top interior
+    //     }
+    // }
 
     // Periodic in X (left/right)
     for (int i = 0; i < nx; ++i) {

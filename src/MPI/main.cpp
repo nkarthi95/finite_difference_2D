@@ -40,16 +40,20 @@ void write_to_file(const std::string& filename, std::vector<double>& grid,
 }
 
 void halo_exchange(std::vector<double>& grid, int nx, int ny, int local_nx, int halo, int rank, int size) {
-    int up = (rank == 0) ? MPI_PROC_NULL : rank - 1;
-    int down = (rank == size - 1) ? MPI_PROC_NULL : rank + 1;
+    // int up = (rank == 0) ? MPI_PROC_NULL : rank - 1;
+    // int down = (rank == size - 1) ? MPI_PROC_NULL : rank + 1;
+    int up = (rank == 0) ? size - 1 : rank - 1;
+    int down = (rank == size - 1) ? 0 : rank + 1;
 
     MPI_Sendrecv(&grid[halo * ny], ny, MPI_DOUBLE, up, 0,
                  &grid[(local_nx + halo) * ny], ny, MPI_DOUBLE, down, 0,
                  MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    // std::cout << "Rank " << rank << ": sending row " << halo << " to rank: " << up << " recieving row " << local_nx + halo << "\n";
 
     MPI_Sendrecv(&grid[(local_nx - 1 + halo) * ny], ny, MPI_DOUBLE, down, 1,
                  &grid[0], ny, MPI_DOUBLE, up, 1,
                  MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    // std::cout << "Rank " << rank << ": sending row " << local_nx + halo - 1 << " to rank: " << down << " recieving row " << 0 << "\n";
 }
 
 int main(int argc, char** argv){
@@ -68,7 +72,7 @@ int main(int argc, char** argv){
     double dy = 1/double(ny);
     double dt = 0.0001;
     double timesteps = 10000;
-    int dump_freq = 100;
+    int dump_freq = 200;
 
     double alpha = 0.002;
     double T_hot = 373.0;
