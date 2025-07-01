@@ -1,57 +1,79 @@
 #include "finite_difference.H"
+#include "misc_functions.H"
 
-void timestep(const std::vector<std::vector<double>>& grid_old,
-              std::vector<std::vector<double>>& grid_new, 
+void timestep(const std::vector<double>& grid_old,
+              std::vector<double>& grid_new, 
+              const std::array<int, 2> dims,
               const double dx, const double dy, const double dt, 
               const double alpha, const int halo){
-    const int nx = grid_old.size(); // includes halo
-    const int ny = grid_old[0].size(); // includes halo
-    // std::vector<std::vector<double>> out(nx, std::vector<double>(ny, 0.0));
-
+    int nx = dims[0]; // includes halo
+    int ny = dims[1]; // includes halo
+    
+    int index_left, index_center, index_right;
     double l, c, r, d2x, d2y;
     
     #pragma omp parallel for collapse(2)
     for (int i = halo; i < nx - halo; i++){
         for (int j = halo; j < ny - halo; j++){
             // x direction
-            r = grid_old[i+1][j];
-            c = grid_old[i][j];
-            l = grid_old[i-1][j];
+            index_left =   idx_2d_to_1d(i-1, j, ny);
+            index_center = idx_2d_to_1d(i, j, ny);
+            index_right =  idx_2d_to_1d(i+1, j, ny);
+
+            r = grid_old[index_right];
+            c = grid_old[index_center];
+            l = grid_old[index_left];
 
             d2x = (r - 2.*c + l)/(dx*dx);
 
             // y direction
-            r = grid_old[i][j+1];
-            c = grid_old[i][j];
-            l = grid_old[i][j-1];
+            index_left =   idx_2d_to_1d(i, j-1, ny);
+            index_center = idx_2d_to_1d(i, j, ny);
+            index_right =  idx_2d_to_1d(i, j+1, ny);
+
+            r = grid_old[index_right];
+            c = grid_old[index_center];
+            l = grid_old[index_left];
 
             d2y = (r - 2.*c + l)/(dy*dy);
 
             // timestepping
-            grid_new[i][j] = grid_old[i][j] + alpha*dt*(d2x + d2y);
+            grid_new[index_center] = grid_old[index_center] + alpha*dt*(d2x + d2y);
         }
     }
 }
 
-void boundary_condition_periodic(std::vector<std::vector<double>>& grid, const int halo){
-    const int nx = grid.size(); // includes halo at index 0 and nx - 1
-    const int ny = grid[0].size(); // includes halo at index 0 and ny - 1
+void boundary_condition_periodic(std::vector<double>& grid, 
+                                 const std::array<int, 2> dims, const int halo){
+    int nx = dims[0]; // includes halo at index 0 and nx - 1
+    int ny = dims[1]; // includes halo at index 0 and ny - 1
     
-    #pragma omp parallel for
+    int ghost_index, interior_index;
     // Periodic in Y (top/bottom)
+    #pragma omp parallel for collapse(2)
     for (int j = halo; j < ny - halo; ++j) {
         for (int h = 0; h < halo; ++h) {
-            grid[h][j] = grid[nx - 2 * halo + h][j];             // top ghost = bottom interior
-            grid[nx - halo + h][j] = grid[halo + h][j];          // bottom ghost = top interior
+            ghost_index = idx_2d_to_1d(h, j, ny);
+            interior_index  = idx_2d_to_1d(nx-2*halo+h, j, ny);
+            grid[ghost_index] = grid[interior_index];             // top ghost = bottom interior
+            
+            ghost_index = idx_2d_to_1d(nx-halo+h, j, ny);
+            interior_index  = idx_2d_to_1d(halo+h, j, ny);
+            grid[ghost_index] = grid[interior_index];          // bottom ghost = top interior
         }
     }
 
-    #pragma omp parallel for
     // Periodic in X (left/right)
+    #pragma omp parallel for collapse(2)
     for (int i = 0; i < nx; ++i) {
         for (int h = 0; h < halo; ++h) {
-            grid[i][h] = grid[i][ny - 2 * halo + h];             // left ghost = right interior
-            grid[i][ny - halo + h] = grid[i][halo + h];          // right ghost = left interior
+            ghost_index = idx_2d_to_1d(i, h, ny);
+            interior_index  = idx_2d_to_1d(i, ny-2*halo+h, ny);
+            grid[ghost_index] = grid[interior_index];             // left ghost = right interior
+
+            ghost_index = idx_2d_to_1d(i, ny-halo+h, ny);
+            interior_index  = idx_2d_to_1d(i, halo+h, ny);
+            grid[ghost_index] = grid[interior_index];             // right ghost = left interior
         }
     }
 }

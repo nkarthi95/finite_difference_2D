@@ -2,21 +2,11 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
-#include <stdexcept>  // for std::runtime_error
-#include <algorithm>  // for std::min
 #include <omp.h>
 
 #include "finite_difference.H"
 #include "initial_conditions.H"
-
-void check_CFL(double alpha, double dx, double dy, double dt) {
-    double min_dxdy = std::min(dx, dy);
-    double C = alpha*dt/(min_dxdy*min_dxdy); // CFL condition
-
-    if (C > 0.1) {
-        throw std::runtime_error("CFL condition not fulfilled: C = " + std::to_string(C));
-    }
-}
+#include "misc_functions.H"
 
 std::string zero_pad(int number, int width) {
     std::ostringstream oss;
@@ -24,15 +14,18 @@ std::string zero_pad(int number, int width) {
     return oss.str();
 }
 
-void write_to_file(const std::string& filename, std::vector<std::vector<double>> grid, int halo){
+void write_to_file(const std::string& filename, std::vector<double> grid, 
+                   const std::array<int, 2> dims, int halo){
     std::ofstream fout(filename);
 
-    const int nx = grid.size(); // includes halo
-    const int ny = grid[0].size(); // includes halo
+    int nx = dims[0]; // includes halo
+    int ny = dims[1]; // includes halo
+    int curr_index;
 
     for (int i = halo; i < nx - halo; i++){
         for (int j = halo; j < ny - halo; j++){
-            fout << grid[i][j] << ", ";
+            curr_index = idx_2d_to_1d(i, j, ny);
+            fout << grid[curr_index] << ", ";
         }
         fout << "\n";
     }
@@ -40,10 +33,10 @@ void write_to_file(const std::string& filename, std::vector<std::vector<double>>
 }
 
 int main(){
-    omp_set_num_threads(4);  // or a fixed number
-
+    omp_set_num_threads(4);
     int nx = 512;
     int ny = 512;
+    const std::array<int, 2> dims = {nx, ny};
     int halo = 1;
 
     double dx = 1/double(nx);
@@ -56,32 +49,30 @@ int main(){
     double T_hot = 373.0;
     double T_cold = 273.0;
 
-    check_CFL(alpha, dx, dy, dt);
-
-    std::vector<std::vector<double>> grid_old(nx+2*halo, std::vector<double>(ny+2*halo, 0.0));
-    std::vector<std::vector<double>> grid_new(nx+2*halo, std::vector<double>(ny+2*halo, 0.0));
-
     #pragma omp parallel
     {
     #pragma omp critical
     std::cout << "Thread " << omp_get_thread_num() << " of " << omp_get_num_threads() << "\n";
     }
 
-    // grid_old = init_hot_center(grid_old, T_hot, T_cold, 32);
-    // grid_old = init_vertical_hot_cylinder(grid_old, T_hot, T_cold, 32, nx/2);
-    init_hot_square(grid_old, T_hot, T_cold, nx/4, ny/4);
+    check_CFL(alpha, dx, dy, dt);
+
+    std::vector<double> grid_old((nx+2*halo)*(ny+2*halo), 0.);
+    std::vector<double> grid_new((nx+2*halo)*(ny+2*halo), 0.);
+
+    init_hot_square(grid_old, dims, T_hot, T_cold, nx/4, ny/4);
 
     for(int t = 0; t <= timesteps; t++){
-        boundary_condition_periodic(grid_old, halo);
+
+        boundary_condition_periodic(grid_old, dims, halo);
 
         if (t%dump_freq == 0){
             const std::string filename = "T_" + zero_pad(t, 6) + ".txt";
-            write_to_file(filename, grid_old, halo);
+            write_to_file(filename, grid_old, dims, halo);
         }
 
-        timestep(grid_old, grid_new, dx, dy, dt, alpha, halo);
+        timestep(grid_old, grid_new, dims, dx, dy, dt, alpha, halo);
         std::swap(grid_new, grid_old);
     }
-
     return 0;
 }
