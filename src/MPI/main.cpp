@@ -2,6 +2,7 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include <mpi.h>
 
 #include "finite_difference.H"
 #include "initial_conditions.H"
@@ -31,12 +32,25 @@ void write_to_file(const std::string& filename, std::vector<double> grid,
     fout.close();
 }
 
-int main(int argc, char** argv){
-    // MPI_Init(&argc, &argv);
+void halo_exchange(std::vector<double>& grid, int nx, int ny, int local_nx, int halo, int rank, int size) {
+    int up = (rank == 0) ? MPI_PROC_NULL : rank - 1;
+    int down = (rank == size - 1) ? MPI_PROC_NULL : rank + 1;
 
-    // int rank, size;
-    // MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    // MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Sendrecv(&grid[halo * ny], ny, MPI_DOUBLE, up, 0,
+                 &grid[(local_nx + halo) * ny], ny, MPI_DOUBLE, down, 0,
+                 MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+    MPI_Sendrecv(&grid[(local_nx - 1 + halo) * ny], ny, MPI_DOUBLE, down, 1,
+                 &grid[0], ny, MPI_DOUBLE, up, 1,
+                 MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+}
+
+int main(int argc, char** argv){
+    MPI_Init(&argc, &argv);
+
+    int rank, size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     int nx = 512;
     int ny = 512;
@@ -58,24 +72,54 @@ int main(int argc, char** argv){
     std::vector<double> grid_old((nx+2*halo)*(ny+2*halo), 0.);
     std::vector<double> grid_new((nx+2*halo)*(ny+2*halo), 0.);
 
-    // if (rank == 0){init_hot_square(grid_old, T_hot, T_cold, nx/4, ny/4);}
-    init_hot_square(grid_old, dims, T_hot, T_cold, nx/4, ny/4);
+    if (rank == 0){init_hot_square(grid_old, dims, T_hot, T_cold, nx/4, ny/4);}
+    // init_hot_square(grid_old, dims, T_hot, T_cold, nx/4, ny/4);
 
     // MPI stuff
-    // const int local_nx = nx/size; // decompose along x plane
+    const int local_nx = nx/size; // decompose along x plane
+    const int padded_ny = ny + 2*halo; //decomposition array size in the y direction
+    const int padded_nx = local_nx + 2*halo; //decomposition array size in the x direction
+    std::array<int, 2> local_dims = {padded_nx, padded_ny}; //dimensions of domain decomposition
+
+    std::vector<double> local_old(padded_nx*padded_ny, 0.0); // domain decomposition grid for t_old
+    std::vector<double> local_new(padded_nx*padded_ny, 0.0); // domain decomposition grid for t_new
+
+    std::vector<int> counts(size), displs(size);
+    for (int r = 0; r < size; ++r) {
+        counts[r] = local_nx*padded_ny;   // number of elements per rank (no halos yet)
+        displs[r] = r*local_nx*padded_ny; // number of elements per rank (no halos yet)
+    }
+
+    if (rank == 0){
+        MPI_Scatterv(rank == 0 ? grid_old.data() : nullptr,
+             counts.data(), displs.data(), MPI_DOUBLE,
+             &local_old[halo*padded_ny],  // start at first interior row
+             local_nx*padded_ny, MPI_DOUBLE,
+             0, MPI_COMM_WORLD);
+    }
 
     for(int t = 0; t <= timesteps; t++){
-        boundary_condition_periodic(grid_old, dims, halo);
+        halo_exchange(local_old, padded_nx, padded_ny, local_nx, halo, rank, size);
 
-        if (t%dump_freq == 0){
+        // boundary_condition_periodic(grid_old, dims, halo);
+        boundary_condition_periodic(local_old, local_dims, halo);
+
+        if (t%dump_freq == 0 and rank == 0){
+            MPI_Gatherv(&local_old[halo*padded_ny], local_nx*padded_ny, MPI_DOUBLE,
+            rank == 0 ? grid_old.data() : nullptr,
+            counts.data(), displs.data(), MPI_DOUBLE,
+            0, MPI_COMM_WORLD);
+
             const std::string filename = "T_" + zero_pad(t, 6) + ".txt";
             write_to_file(filename, grid_old, dims, halo);
         }
 
-        timestep(grid_old, grid_new, dims, dx, dy, dt, alpha, halo);
-        std::swap(grid_new, grid_old);
+        // timestep(grid_old, grid_new, dims, dx, dy, dt, alpha, halo);
+        timestep(local_old, local_new, local_dims, dx, dy, dt, alpha, halo);
+        // std::swap(grid_new, grid_old);
+        std::swap(local_new, local_old);
     }
 
-    // MPI_Finalize();
+    MPI_Finalize();
     return 0;
 }
