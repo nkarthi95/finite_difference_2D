@@ -85,20 +85,21 @@ int main(int argc, char** argv){
     if (rank == 0){init_hot_square(grid_old, dims, T_hot, T_cold, nx/4, ny/4);}
     // init_hot_square(grid_old, dims, T_hot, T_cold, nx/4, ny/4);
 
-    // MPI stuff
-    const int local_nx = nx/size; // decompose along x plane
-    const int padded_ny = ny + 2*halo; //decomposition array size in the y direction
-    const int padded_nx = local_nx + 2*halo; //decomposition array size in the x direction
-    std::array<int, 2> local_dims = {padded_nx, padded_ny}; //dimensions of domain decomposition
+    // MPI STUFF
+    const int local_nx = nx / size;               // split x-dimension
+    const int padded_ny = ny;                     // local y-size = global y-size (no y-halos)
+    const int padded_nx = local_nx + 2 * halo;    // add top/bottom halos
+    std::array<int, 2> local_dims = {padded_nx, padded_ny};
 
-    std::vector<double> local_old(padded_nx*padded_ny, 0.0); // domain decomposition grid for t_old
-    std::vector<double> local_new(padded_nx*padded_ny, 0.0); // domain decomposition grid for t_new
+    std::vector<double> local_old(padded_nx * padded_ny, 0.0);
+    std::vector<double> local_new(padded_nx * padded_ny, 0.0);
 
     std::vector<int> counts(size), displs(size);
     for (int r = 0; r < size; ++r) {
-        counts[r] = local_nx*padded_ny;   // number of elements per rank (no halos yet)
-        displs[r] = r*local_nx*padded_ny; // number of elements per rank (no halos yet)
+        counts[r]  = local_nx * ny;               // send only interior rows per rank
+        displs[r]  = r * local_nx * ny;
     }
+    // MPI STUFF
 
     MPI_Scatterv(rank == 0 ? grid_old.data() : nullptr,
             counts.data(), displs.data(), MPI_DOUBLE,
