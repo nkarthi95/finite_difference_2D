@@ -3,6 +3,7 @@
 #include <sstream>
 #include <iomanip>
 #include <omp.h>
+#include <chrono>
 
 #include "finite_difference.H"
 #include "initial_conditions.H"
@@ -34,6 +35,8 @@ void write_to_file(const std::string& filename, std::vector<double> grid,
 
 int main(){
     omp_set_num_threads(4);
+    auto start = std::chrono::high_resolution_clock::now();
+
     int nx = 512;
     int ny = 512;
     const std::array<int, 2> dims = {nx, ny};
@@ -74,5 +77,9 @@ int main(){
         timestep(grid_old, grid_new, dims, dx, dy, dt, alpha, halo);
         std::swap(grid_new, grid_old);
     }
+    
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    std::cout << "Runtime: " << elapsed.count() << " seconds\n";
     return 0;
 }
