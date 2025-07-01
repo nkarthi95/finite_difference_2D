@@ -14,7 +14,7 @@ std::string zero_pad(int number, int width) {
     return oss.str();
 }
 
-void write_to_file(const std::string& filename, std::vector<double> grid, 
+void write_to_file(const std::string& filename, std::vector<double>& grid, 
                    const std::array<int, 2> dims, int halo){
     std::ofstream fout(filename);
 
@@ -22,8 +22,15 @@ void write_to_file(const std::string& filename, std::vector<double> grid,
     int ny = dims[1]; // includes halo
     int curr_index;
 
-    for (int i = halo; i < nx - halo; i++){
-        for (int j = halo; j < ny - halo; j++){
+    // for (int i = halo; i < nx - halo; i++){
+    //     for (int j = halo; j < ny - halo; j++){
+    //         curr_index = idx_2d_to_1d(i, j, ny);
+    //         fout << grid[curr_index] << ", ";
+    //     }
+    //     fout << "\n";
+    // }
+    for (int i = 0; i < nx; i++){
+        for (int j = 0; j < ny; j++){
             curr_index = idx_2d_to_1d(i, j, ny);
             fout << grid[curr_index] << ", ";
         }
@@ -69,8 +76,11 @@ int main(int argc, char** argv){
 
     check_CFL(alpha, dx, dy, dt);
 
-    std::vector<double> grid_old((nx+2*halo)*(ny+2*halo), 0.);
-    std::vector<double> grid_new((nx+2*halo)*(ny+2*halo), 0.);
+    // initialize grids without halo
+    // std::vector<double> grid_old((nx + 2*halo)*(ny + 2*halo), 0.);
+    // std::vector<double> grid_new((nx + 2*halo)*(ny + 2*halo), 0.);
+    std::vector<double> grid_old((nx)*(ny), 0.);
+    std::vector<double> grid_new((nx)*(ny), 0.);
 
     if (rank == 0){init_hot_square(grid_old, dims, T_hot, T_cold, nx/4, ny/4);}
     // init_hot_square(grid_old, dims, T_hot, T_cold, nx/4, ny/4);
@@ -90,13 +100,11 @@ int main(int argc, char** argv){
         displs[r] = r*local_nx*padded_ny; // number of elements per rank (no halos yet)
     }
 
-    if (rank == 0){
-        MPI_Scatterv(rank == 0 ? grid_old.data() : nullptr,
-             counts.data(), displs.data(), MPI_DOUBLE,
-             &local_old[halo*padded_ny],  // start at first interior row
-             local_nx*padded_ny, MPI_DOUBLE,
-             0, MPI_COMM_WORLD);
-    }
+    MPI_Scatterv(rank == 0 ? grid_old.data() : nullptr,
+            counts.data(), displs.data(), MPI_DOUBLE,
+            &local_old[halo*padded_ny],  // start at first interior row
+            local_nx*padded_ny, MPI_DOUBLE,
+            0, MPI_COMM_WORLD);
 
     for(int t = 0; t <= timesteps; t++){
         halo_exchange(local_old, padded_nx, padded_ny, local_nx, halo, rank, size);
@@ -104,14 +112,16 @@ int main(int argc, char** argv){
         // boundary_condition_periodic(grid_old, dims, halo);
         boundary_condition_periodic(local_old, local_dims, halo);
 
-        if (t%dump_freq == 0 and rank == 0){
+        if (t%dump_freq == 0){
             MPI_Gatherv(&local_old[halo*padded_ny], local_nx*padded_ny, MPI_DOUBLE,
             rank == 0 ? grid_old.data() : nullptr,
             counts.data(), displs.data(), MPI_DOUBLE,
             0, MPI_COMM_WORLD);
-
+            
+            if(rank == 0){
             const std::string filename = "T_" + zero_pad(t, 6) + ".txt";
             write_to_file(filename, grid_old, dims, halo);
+            }
         }
 
         // timestep(grid_old, grid_new, dims, dx, dy, dt, alpha, halo);
