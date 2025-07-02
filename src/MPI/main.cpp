@@ -33,6 +33,7 @@ void write_to_file(const std::string& filename, std::vector<double>& grid,
 }
 
 void halo_exchange(std::vector<double>& grid, int nx, int ny, int local_nx, int halo, int rank, int size) {
+    // std::cout << "sendrecv\n";
     int up = (rank == 0) ? size - 1 : rank - 1;
     int down = (rank == size - 1) ? 0 : rank + 1;
 
@@ -49,7 +50,8 @@ void halo_exchange(std::vector<double>& grid, int nx, int ny, int local_nx, int 
 
 int main(int argc, char** argv){
     MPI_Init(&argc, &argv);
-    double start = MPI_Wtime();
+    double total_time = 0., halo_time = 0., IO_time = 0., step_time = 0., bc_time = 0., start = 0., end = 0.;
+    double total_start = MPI_Wtime();
 
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -101,10 +103,17 @@ int main(int argc, char** argv){
             0, MPI_COMM_WORLD);
 
     for(int t = 0; t <= timesteps; t++){
+        start = MPI_Wtime();
         halo_exchange(local_old, padded_nx, padded_ny, local_nx, halo, rank, size);
+        end = MPI_Wtime();
+        halo_time += end - start;
 
+        start = MPI_Wtime();
         boundary_condition_periodic(local_old, local_dims, halo);
+        end = MPI_Wtime();
+        bc_time += end - start;
 
+        start = MPI_Wtime();
         if (t%dump_freq == 0){
             MPI_Gatherv(&local_old[halo*padded_ny], local_nx*padded_ny, MPI_DOUBLE,
             rank == 0 ? grid_old.data() : nullptr,
@@ -116,15 +125,27 @@ int main(int argc, char** argv){
             write_to_file(filename, grid_old, dims, halo);
             }
         }
+        end = MPI_Wtime();
+        IO_time += end - start;
 
+        start = MPI_Wtime();
         timestep(local_old, local_new, local_dims, dx, dy, dt, alpha, halo);
+        end = MPI_Wtime();
+        step_time += end - start;
+
         std::swap(local_new, local_old);
     }
 
-    double end = MPI_Wtime();
+    double total_end = MPI_Wtime();
+    total_time = total_end - total_start;
 
     if (rank == 0){
-        std::cout << "Runtime: " << end - start << " seconds\n";
+        // double total_time = 0., halo_time = 0., IO_time = 0., step_time = 0., bc_time = 0.;
+        std::cout << "TS Runtime: " << step_time << " seconds\n";
+        std::cout << "MP Runtime: " << halo_time << " seconds\n";
+        std::cout << "BC Runtime: " << bc_time << " seconds\n";
+        std::cout << "IO Runtime: " << IO_time << " seconds\n";
+        std::cout << "Total Runtime: " << total_time << " seconds\n";
     }
     MPI_Finalize();
     return 0;
