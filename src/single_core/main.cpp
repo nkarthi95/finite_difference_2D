@@ -33,7 +33,10 @@ void write_to_file(const std::string& filename, std::vector<double> grid,
 }
 
 int main(){
-    auto start = std::chrono::high_resolution_clock::now();
+    double total_time = 0., IO_time = 0., step_time = 0., bc_time = 0.;
+    std::chrono::high_resolution_clock::time_point start, end;
+    std::chrono::duration<double> elapsed;
+    auto total_start = std::chrono::high_resolution_clock::now();
 
     int nx = 512;
     int ny = 512;
@@ -59,19 +62,37 @@ int main(){
 
     for(int t = 0; t <= timesteps; t++){
 
+        start = std::chrono::high_resolution_clock::now();
         boundary_condition_periodic(grid_old, dims, halo);
+        end = std::chrono::high_resolution_clock::now();
+        elapsed = end - start;
+        bc_time += elapsed.count();
 
+        start = std::chrono::high_resolution_clock::now();
         if (t%dump_freq == 0){
             const std::string filename = "T_" + zero_pad(t, 6) + ".txt";
             write_to_file(filename, grid_old, dims, halo);
         }
+        end = std::chrono::high_resolution_clock::now();
+        elapsed = end - start;
+        IO_time += elapsed.count();
 
+        start = std::chrono::high_resolution_clock::now();
         timestep(grid_old, grid_new, dims, dx, dy, dt, alpha, halo);
+        end = std::chrono::high_resolution_clock::now();
+        elapsed = end - start;
+        step_time += elapsed.count();
+
         std::swap(grid_new, grid_old);
     }
     
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed = end - start;
-    std::cout << "Runtime: " << elapsed.count() << " seconds\n";
+    auto total_end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> total_elapsed = total_end - total_start;
+    total_time = total_elapsed.count();
+
+    std::cout << "TS Runtime: " << step_time << " seconds\n";
+    std::cout << "BC Runtime: " << bc_time << " seconds\n";
+    std::cout << "IO Runtime: " << IO_time << " seconds\n";
+    std::cout << "Total Runtime: " << total_time << " seconds\n";
     return 0;
 }
