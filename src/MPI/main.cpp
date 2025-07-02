@@ -32,7 +32,6 @@ void write_to_file(const std::string& filename, std::vector<double>& grid,
     fout.close();
 }
 
-#ifdef USE_SENDRECV
 void halo_exchange(std::vector<double>& grid, int nx, int ny, int local_nx, int halo, int rank, int size) {
     // std::cout << "sendrecv\n";
     int up = (rank == 0) ? size - 1 : rank - 1;
@@ -48,26 +47,6 @@ void halo_exchange(std::vector<double>& grid, int nx, int ny, int local_nx, int 
                  MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     // std::cout << "Rank " << rank << ": sending row " << local_nx + halo - 1 << " to rank: " << down << " recieving row " << 0 << "\n";
 }
-#else
-void halo_exchange(std::vector<double>& grid, int nx, int ny, int local_nx, int halo, int rank, int size) {
-    // std::cout << "Irecv\n";
-    int up = (rank == 0) ? size - 1 : rank - 1;
-    int down = (rank == size - 1) ? 0 : rank + 1;
-
-    MPI_Request requests[4];
-
-    // Non-blocking receives
-    MPI_Irecv(&grid[0], ny, MPI_DOUBLE, up, 1, MPI_COMM_WORLD, &requests[0]);                         // from up into top halo
-    MPI_Irecv(&grid[(local_nx + halo) * ny], ny, MPI_DOUBLE, down, 0, MPI_COMM_WORLD, &requests[1]);  // from down into bottom halo
-
-    // Non-blocking sends
-    MPI_Isend(&grid[halo * ny], ny, MPI_DOUBLE, up, 0, MPI_COMM_WORLD, &requests[2]);                 // send top interior to up
-    MPI_Isend(&grid[(local_nx + halo - 1) * ny], ny, MPI_DOUBLE, down, 1, MPI_COMM_WORLD, &requests[3]); // send bottom interior to down
-
-    // Wait for all to complete
-    MPI_Waitall(4, requests, MPI_STATUSES_IGNORE);
-}
-#endif
 
 int main(int argc, char** argv){
     MPI_Init(&argc, &argv);
