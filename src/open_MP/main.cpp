@@ -34,26 +34,30 @@ void write_to_file(const std::string& filename, std::vector<double> grid,
 }
 
 int main(){
-    double total_time = 0., IO_time = 0., step_time = 0., bc_time = 0.;
-    std::chrono::high_resolution_clock::time_point start, end;
-    std::chrono::duration<double> elapsed;
-    omp_set_num_threads(4);
-    auto total_start = std::chrono::high_resolution_clock::now();
+    // INPUT PARAMETERS
+    const int threads = 2;
+    int nx = 1024; // size of field in x direction
+    int ny = 1024; // size of field in y direction
 
-    int nx = 512;
-    int ny = 512;
-    const std::array<int, 2> dims = {nx, ny};
-    int halo = 1;
+    double dt = 0.000025; // timestep length 
+    double timesteps = 10000; // number of timesteps
+    int dump_freq = 10000; // Timesteps between data dump
+
+    double alpha = 0.002; // Thermal diffusivity of system
+    double T_hot = 373.0; // Temperature in K of the hot point
+    double T_cold = 273.0; // Temperature in K of the cold point
+    // INPUT PARAMETERS
+
+    omp_set_num_threads(threads); // Number of threads to use
 
     double dx = 1/double(nx);
     double dy = 1/double(ny);
-    double dt = 0.0001;
-    double timesteps = 10000;
-    int dump_freq = 100;
+    check_CFL(alpha, dx, dy, dt);
 
-    double alpha = 0.002;
-    double T_hot = 373.0;
-    double T_cold = 273.0;
+    double total_time = 0., IO_time = 0., step_time = 0., bc_time = 0.;
+    std::chrono::high_resolution_clock::time_point start, end;
+    std::chrono::duration<double> elapsed;
+    auto total_start = std::chrono::high_resolution_clock::now();
 
     #pragma omp parallel
     {
@@ -61,7 +65,8 @@ int main(){
     std::cout << "Thread " << omp_get_thread_num() << " of " << omp_get_num_threads() << "\n";
     }
 
-    check_CFL(alpha, dx, dy, dt);
+    const std::array<int, 2> dims = {nx, ny}; // Box dimensions
+    int halo = 1; // Number of halo layers in the box
 
     std::vector<double> grid_old((nx+2*halo)*(ny+2*halo), 0.);
     std::vector<double> grid_new((nx+2*halo)*(ny+2*halo), 0.);

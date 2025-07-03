@@ -50,30 +50,32 @@ void halo_exchange(std::vector<double>& grid, int nx, int ny, int local_nx, int 
 
 int main(int argc, char** argv){
     MPI_Init(&argc, &argv);
-    double total_time = 0., halo_time = 0., IO_time = 0., step_time = 0., bc_time = 0., start = 0., end = 0.;
-    double total_start = MPI_Wtime();
-
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    int nx = 1024;
-    int ny = 1024;
-    const std::array<int, 2> dims = {nx, ny};
-    int halo = 1;
+    // INPUT PARAMETERS
+    int nx = 1024; // size of field in x direction
+    int ny = 1024; // size of field in y direction
+
+    double dt = 0.000025; // timestep length 
+    double timesteps = 10000; // number of timesteps
+    int dump_freq = 10000; // Timesteps between data dump
+
+    double alpha = 0.002; // Thermal diffusivity of system
+    double T_hot = 373.0; // Temperature in K of the hot point
+    double T_cold = 273.0; // Temperature in K of the cold point
+    // INPUT PARAMETERS
+
+    double total_time = 0., halo_time = 0., IO_time = 0., step_time = 0., bc_time = 0., start = 0., end = 0.;
+    double total_start = MPI_Wtime();
 
     double dx = 1/double(nx);
     double dy = 1/double(ny);
-    double dt = 0.000025;
-    double timesteps = 10000;
-    int dump_freq = 1000;
-
-    double alpha = 0.002;
-    double T_hot = 373.0;
-    double T_cold = 273.0;
-
     check_CFL(alpha, dx, dy, dt);
 
+    const std::array<int, 2> dims = {nx, ny};
+    int halo = 1;
     // initialize grids without halo unlike OMP and single core versions
     std::vector<double> grid_old((nx)*(ny), 0.);
     std::vector<double> grid_new((nx)*(ny), 0.);
