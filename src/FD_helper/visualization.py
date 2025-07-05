@@ -2,7 +2,9 @@ from matplotlib import animation
 import matplotlib.pyplot as plt
 import numpy as np
 
-def animate_colormap(data, axs_labels=None, times=None, c_label=None, interval=50, sz=5, cm='bwr'):
+def animate_colormap(data, axs_labels=None, times=None, 
+                     c_label=None, interval=50, sz=5, 
+                     cm='bwr', update_lims = True):
     """
     Create an animation of a 2D colormap over time.
 
@@ -58,8 +60,12 @@ def animate_colormap(data, axs_labels=None, times=None, c_label=None, interval=5
 
     def update(i):
         img.set_data(data[i])
-        vmin = np.amin(data[i])
-        vmax = np.amax(data[i])
+        if update_lims:
+            vmin = np.amin(data[i])
+            vmax = np.amax(data[i])
+        else:
+            vmin = np.amin(data)
+            vmax = np.amax(data)
         img.set_clim(vmin, vmax)
         if times is not None:
             ax.set(title=f"Time = {times[i]}")

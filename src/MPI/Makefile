@@ -2,12 +2,6 @@
 CXX = mpic++
 CXXFLAGS = -Wall -Wextra -std=c++17 -O2 -fopenmp
 
-# compile flags
-USE_SENDRECV ?= 0
-ifeq ($(USE_SENDRECV),1)
-    CXXFLAGS += -DUSE_SENDRECV
-endif
-
 # source files
 SRC = main.cpp finite_difference.cpp
 OBJ = $(SRC:.cpp=.o)
