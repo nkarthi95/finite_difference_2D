@@ -36,7 +36,6 @@ int main(){
     // INPUT PARAMETERS
     int nx = 1024; // size of field in x direction
     int ny = 1024; // size of field in y direction
-
     double dt = 0.000025; // timestep length 
     double timesteps = 10000; // number of timesteps
     int dump_freq = 1000; // Timesteps between data dump
