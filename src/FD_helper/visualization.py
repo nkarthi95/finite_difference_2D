@@ -153,3 +153,18 @@ def read_data(file_path):
     data = np.array(data)
 
     return data
+
+def read_time_data(path, n_times = 5):
+    time_data = []
+
+    with open(path, "r") as file:
+        lines = file.readlines()
+        curr_time_data = []
+        for i in range(0, len(lines)):
+            if i%(n_times+1) < n_times:
+                curr_time_data.append(float(lines[i].split()[2]))
+            else:
+                time_data.append(curr_time_data)
+                curr_time_data = []
+    
+    return time_data
