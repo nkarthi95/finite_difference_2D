@@ -45,6 +45,7 @@ void timestep(const std::vector<double>& grid_old,
     }
 }
 
+#ifdef USE_OLDMPI
 void boundary_condition_periodic(std::vector<double>& grid, 
                                  const std::array<int, 2> dims, const int halo){
     int nx = dims[0]; // includes halo at index 0 and nx - 1
@@ -79,3 +80,4 @@ void boundary_condition_periodic(std::vector<double>& grid,
         }
     }
 }
+#endif

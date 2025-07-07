@@ -8,9 +8,14 @@ ifeq ($(USE_SENDV_1D),1)
     CXXFLAGS += -DUSE_SENDV_1D
 endif
 
-USE_OMP ?= 0
+USE_OMP ?= 1
 ifeq ($(USE_OMP),1)
-    CXXFLAGS += -USE_OMP
+    CXXFLAGS += -DUSE_OMP
+endif
+
+USE_OLDMPI ?= 0
+ifeq ($(USE_OLDMPI),1)
+    CXXFLAGS += -DUSE_OLDMPI
 endif
 
 # source files
