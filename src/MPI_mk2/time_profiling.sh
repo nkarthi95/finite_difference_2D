@@ -1,3 +1,6 @@
+export OMP_PLACES=cores
+export OMP_PROC_BIND=spread
+
 # 2D decomposition, OMP #
 make clean
 make USE_SENDV_1D=0 USE_OMP=1 USE_OLDMPI=0
